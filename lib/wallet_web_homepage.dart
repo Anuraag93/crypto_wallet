@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:cryptography/cryptography.dart';
 import 'dart:convert';
-import 'hyperliquid_webview.dart';
+import 'package:js/js.dart';
+import 'package:js/js_util.dart';
+
+@JS('signWithPrivateKey')
+external Object signWithPrivateKey(String base64Key, String orderJson);
 
 class WalletHomePage extends StatefulWidget {
   const WalletHomePage({super.key});
@@ -19,6 +23,7 @@ class _WalletHomePageState extends State<WalletHomePage> {
   String? privateKeyBase64;
   String encryptionSteps = '';
   String decryptionSteps = '';
+  String? signedOrder;
 
   @override
   void dispose() {
@@ -109,7 +114,6 @@ class _WalletHomePageState extends State<WalletHomePage> {
         privateKeyBase64 = base64Encode(decrypted);
       });
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Invalid password or decryption error')),
       );
@@ -118,19 +122,38 @@ class _WalletHomePageState extends State<WalletHomePage> {
     decryptionSteps = buffer.toString();
   }
 
-  void openWebView() {
-    if (privateKeyBase64 != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              HyperliquidWebView(privateKeyBase64: privateKeyBase64!),
-        ),
-      );
-    } else {
+  Future<void> signOrderWithJS() async {
+    if (privateKeyBase64 == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Unlock wallet first')));
+      return;
+    }
+
+    final order = {
+      "type": "order",
+      "coin": "ETH",
+      "isBuy": true,
+      "sz": 0.01,
+      "limitPx": 3000,
+      "orderType": "limit",
+      "clientOrderId": "web-interop-demo-1",
+    };
+
+    final orderJson = jsonEncode(order);
+
+    try {
+      final result = await promiseToFuture<String>(
+        signWithPrivateKey(privateKeyBase64!, orderJson),
+      );
+
+      setState(() {
+        signedOrder = result;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('JS signing error: $e')));
     }
   }
 
@@ -160,8 +183,8 @@ class _WalletHomePageState extends State<WalletHomePage> {
                 child: Text('Unlock Wallet'),
               ),
               ElevatedButton(
-                onPressed: openWebView,
-                child: Text('Open WebView (Sign)'),
+                onPressed: signOrderWithJS,
+                child: Text('Sign Sample Order (JS)'),
               ),
               SizedBox(height: 20),
               if (publicKeyBase64 != null)
@@ -180,6 +203,9 @@ class _WalletHomePageState extends State<WalletHomePage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               if (decryptionSteps.isNotEmpty) SelectableText(decryptionSteps),
+              SizedBox(height: 20),
+              if (signedOrder != null)
+                SelectableText('Signed Order (Base64):\n$signedOrder'),
             ],
           ),
         ),

@@ -1,4 +1,5 @@
-import 'package:crypto_wallet/wallet_homepage.dart';
+// import 'package:crypto_wallet/wallet_homepage.dart';
+import 'package:crypto_wallet/wallet_web_homepage.dart';
 import 'package:flutter/material.dart';
 
 void main() {
