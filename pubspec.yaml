@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^9.2.4
+  webview_flutter: ^4.13.0
 
 dev_dependencies:
   flutter_test:

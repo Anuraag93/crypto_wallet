@@ -1,4 +1,4 @@
-import 'package:crypto_wallet/wallet_homepage_output.dart';
+import 'package:crypto_wallet/wallet_homepage.dart';
 import 'package:flutter/material.dart';
 
 void main() {
